@@ -21,7 +21,7 @@ if [ "${1:-}" = --uninstall ]; then
     exit 0
 fi
 mkdir -p "$dest"
-for f in scalebar.inx scalebar.py calibration.py; do
+for f in scalebar.inx scalebar.py calibration.py panels.inx panels.py; do
     ln -sf "$repo/$f" "$dest/$f"
 done
 echo "installed into $dest (restart Inkscape): Extensions > Images > Scale Bar..."

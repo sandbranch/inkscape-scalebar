@@ -70,6 +70,23 @@ def drawn_area(image, raster_w, raster_h):
     return x + (width - dw) * fx, y + (height - dh) * fy, dw, dh
 
 
+def visible_area(image, area):
+    """`area` (from drawn_area) cut down to the image's clip, for a
+    cropped image, so that the scale bar sits in the part that shows."""
+    x, y, width, height = area
+    clip = image.clip
+    if clip is None or clip.get("clipPathUnits") == "objectBoundingBox":
+        return area
+    box = clip.bounding_box()
+    if box is None:
+        return area
+    left, top = max(x, box.left), max(y, box.top)
+    right, bottom = min(x + width, box.right), min(y + height, box.bottom)
+    if right <= left or bottom <= top:
+        return area
+    return left, top, right - left, bottom - top
+
+
 class ScaleBar(inkex.EffectExtension):
     """Draw a calibrated scale bar on the selected microscope images"""
 
@@ -211,10 +228,12 @@ class ScaleBar(inkex.EffectExtension):
         return "#000000" if patch.mean() / top > 0.5 else "#ffffff"
 
     def draw(self, image, cal, data, raster, area):
-        x, y, width, height = area
-        uu_per_px = width / raster[0]
+        full_x, full_y, full_w, full_h = area
+        uu_per_px = full_w / raster[0]
+        # placed and sized within the part that shows (a cropped image)
+        x, y, width, height = visible_area(image, area)
         if self.options.length.strip().lower() in ("", "auto"):
-            length = nice_length(0.2 * raster[0] * cal.x)
+            length = nice_length(0.2 * width / uu_per_px * cal.x)
         else:
             length = calibration.parse_length(self.options.length)
         bar_w = length / cal.x * uu_per_px
@@ -237,13 +256,13 @@ class ScaleBar(inkex.EffectExtension):
             group.transform = image.transform
 
         # sample the ground under the bar, in raster pixels
-        px_x, px_y = raster[0] / width, raster[1] / height
+        px_x, px_y = raster[0] / full_w, raster[1] / full_h
         pad = margin * 0.5
         box_px = (
-            int((left - pad - x) * px_x),
-            int((top - pad - y) * px_y),
-            int((left + bar_w + pad - x) * px_x),
-            int((bar_y + thick + pad - y) * px_y),
+            int((left - pad - full_x) * px_x),
+            int((top - pad - full_y) * px_y),
+            int((left + bar_w + pad - full_x) * px_x),
+            int((bar_y + thick + pad - full_y) * px_y),
         )
         color = self.bar_color(data, raster, box_px)
 
@@ -266,7 +285,13 @@ class ScaleBar(inkex.EffectExtension):
         if self.options.label:
             text = inkex.TextElement()
             text.text = calibration.format_length(length, 3)
-            text.set("x", f"{left + bar_w / 2:.6g}")
+            # centred over the bar, but kept inside the image (a short bar
+            # in a corner would push its text over the edge); the text
+            # width is estimated at 0.6 em per character
+            half = 0.3 * font * len(text.text)
+            centre = left + bar_w / 2
+            centre = min(max(centre, x + margin + half), x + width - margin - half)
+            text.set("x", f"{centre:.6g}")
             text.set("y", f"{bar_y - gap:.6g}")
             text.style = {
                 "font-size": f"{font:.6g}px",

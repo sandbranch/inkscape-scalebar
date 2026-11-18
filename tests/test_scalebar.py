@@ -211,3 +211,38 @@ def test_nothing_selected_means_every_image(tmp_path):
 def test_no_images_at_all(tmp_path):
     with pytest.raises(SystemExit):
         run(tmp_path, "<rect width='5' height='5'/>")
+
+
+def test_cropped_image_bar_in_the_part_that_shows(tmp_path):
+    # 200 x 100 pixels drawn 200 x 100, clipped to x 20..120, y 10..60
+    raw = data_uri(png(), "image/png")
+    body = (
+        '<defs><clipPath id="crop"><rect x="20" y="10" width="100" height="50"/></clipPath></defs>'
+        f'<image id="im" width="200" height="100" clip-path="url(#crop)" xlink:href="{raw}"/>'
+    )
+    svg = run(tmp_path, body, "--id=im", "--source=manual", "--pixel_size=1 µm")
+    rect = bar_rect(bars(svg)[0])
+    # a fifth of the 100 pixels that show: 20 µm = 20 units; the margin is
+    # 4 % of the visible width
+    assert float(rect.get("width")) == pytest.approx(20)
+    assert float(rect.get("x")) + 20 == pytest.approx(120 - 4)
+    assert float(rect.get("y")) + float(rect.get("height")) == pytest.approx(60 - 4)
+
+
+def test_length_text_stays_inside_the_image(tmp_path):
+    # a 1-unit bar in the corner with 20-unit text: centred over the bar,
+    # "1 µm" (estimated 0.6 em per character) would run past the edge
+    raw = data_uri(png((100, 50)), "image/png")
+    body = f'<image id="im" width="100" height="50" xlink:href="{raw}"/>'
+    svg = run(
+        tmp_path,
+        body,
+        "--id=im",
+        "--source=manual",
+        "--pixel_size=1 µm",
+        "--length=1 µm",
+        "--font_size=20",
+    )
+    text = bars(svg)[0].findone("svg:text")
+    half = 0.3 * 20 * len("1 µm")
+    assert float(text.get("x")) == pytest.approx(100 - 4 - half)

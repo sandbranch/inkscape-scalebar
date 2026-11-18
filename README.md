@@ -45,24 +45,45 @@ Options: length (auto: a round 1, 2 or 5 about a fifth of the image
 width; or e.g. `20 µm`), corner, colour (automatic picks white or black
 from the image under the bar), background box, label, font, sizes.
 
-Works in the Inkscape Flatpak: it needs only Python, numpy and Pillow,
-and reads linked files as well as images embedded in the drawing.
+Works with native Inkscape and the Flatpak: it needs only Python,
+numpy and Pillow, and reads linked files as well as images embedded in
+the drawing. On a cropped (clipped) image the bar goes in a corner of
+the part that shows.
+
+## Figure Panels
+
+**Extensions > Images > Figure Panels...** lays out microscope images
+as a figure. Select the images (or nothing, for all of them):
+
+- they are arranged in rows that exactly fill the figure width (180 mm
+  by default; 2 columns, 2 mm gaps), every image in a row the same
+  height and keeping its proportions; the order is the current reading
+  order (rows top to bottom, then left to right) or the selection order;
+- each panel gets a letter in its top left corner (A, a, (A) or (a);
+  black or white picked from the image there);
+- each calibrated panel gets a scale bar of one and the same length, so
+  panels can be compared at a glance. When the magnifications differ
+  more than tenfold, one length cannot suit them all, and each panel
+  gets its own (the extension says so).
+
+Images move by their transform, so a cropped image moves with its clip,
+images inside groups or layers are fine, and scale bars and letters from
+an earlier run move along or are replaced. Run it again with a new width
+or column count to redo the layout.
 
 ## Install
 
     dev/install.sh            # symlinks into your Inkscape extensions folder
     dev/install.sh --uninstall
 
-Or copy `scalebar.inx`, `scalebar.py` and `calibration.py` into your
-Inkscape extensions folder. Restart Inkscape.
+Or copy `scalebar.inx`, `scalebar.py`, `calibration.py`, `panels.inx`
+and `panels.py` into your Inkscape extensions folder. Restart Inkscape.
 
 ## Limits
 
 - Inkscape itself cannot display 32-bit float TIFFs (it shows a broken
   image icon); convert those to 8 or 16 bit first. The scale bar is
   still calibrated correctly.
-- The bar is placed in the corner of the whole image, not of a clipped
-  part of it.
 - Not yet read: Zeiss AxioVision's `_meta.xml` files, Leica LAS AF,
   Oxford Instruments, TVIPS (no samples found to check them against);
   JEOL STEM and diffraction images. Nikon files from older NIS-Elements
@@ -80,7 +101,11 @@ instrument files in `tests/data` (see its README) and on generated
 OME-TIFF and ImageJ files; `tests/test_scalebar.py` runs the extension
 through inkex and checks bar lengths, placement with
 `preserveAspectRatio`, transforms, line and typed calibrations, the
-automatic colour and replacing an old bar. They need inkex 1.4
+automatic colour, replacing an old bar, cropped images and keeping the
+length text inside the image; `tests/test_panels.py` checks the Figure
+Panels layout (rows filling the width, images in transformed groups),
+letters, one common bar length, own lengths for very different
+magnifications, and running it twice. They need inkex 1.4
 (`pip install --no-deps inkex==1.4.0` plus lxml, numpy, pillow,
 tinycss2, cssselect, pyparsing, packaging), as in the GitHub workflow.
 
