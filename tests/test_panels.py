@@ -124,3 +124,21 @@ def test_moving_twice_keeps_one_bar_each(tmp_path):
     assert doc_box(again, "b").right - doc_box(again, "a").left == pytest.approx(
         120 * MM
     )
+
+
+def test_width_in_mm_when_user_units_are_not_px(tmp_path):
+    # 2 mm per user unit: inkex's unittouu would ignore that
+    path = tmp_path / "in.svg"
+    path.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+        ' width="300mm" height="200mm" viewBox="0 0 150 100">'
+        + two_panels(2e-6)
+        + "</svg>"
+    )
+    out = io.BytesIO()
+    FigurePanels().run(["--width=180", "--gap=2", str(path)], output=out)
+    svg = inkex.load_svg(io.BytesIO(out.getvalue())).getroot()
+    assert doc_box(svg, "b").right - doc_box(svg, "a").left == pytest.approx(
+        90, rel=1e-5
+    )
+    assert doc_box(svg, "a").height == pytest.approx((180 - 2) / 3 / 2, rel=1e-5)

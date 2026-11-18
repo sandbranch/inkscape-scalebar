@@ -92,7 +92,7 @@ class FigurePanels(ScaleBar):
         return local
 
     def mm(self, value):
-        return self.svg.unittouu(f"{value}mm")
+        return self.svg.viewport_to_unit(f"{value}mm")  # unittouu ignores the viewBox
 
     def effect(self):
         images = [n for n in self.svg.selection.values() if isinstance(n, inkex.Image)]
@@ -112,7 +112,7 @@ class FigurePanels(ScaleBar):
 
         width = self.mm(self.options.width)
         gap = self.mm(self.options.gap)
-        label_size = self.svg.unittouu(f"{self.options.label_size}pt")
+        label_size = self.svg.viewport_to_unit(f"{self.options.label_size}pt")
         top = min(b.top for _, b in boxes)
         left = min(b.left for _, b in boxes)
 
