@@ -16,6 +16,13 @@ The pixel size is read from the image file:
 | Zeiss SEM TIFF | tag 34118, pixel size at 1024 wide |
 | Gatan DigitalMicrograph TIFF | tags 65009/65010, unit in 65003 |
 | JEOL SightX TEM TIFF (MAG mode) | camera resolution / magnification |
+| Olympus/Evident cellSens, analySIS TIFF | SIS block (tag 33560), on any page |
+| Olympus FluoView TIFF (also Andor iQ, untested) | MM header (tag 34361), X and Y records |
+| Nikon NIS-Elements TIFF | `dCalibration` in tag 65331, if calibrated |
+| Leica LAS X TIFF export | resolution tags in cm (only with Leica's description) |
+| Leica TCS TIFF | `Voxel-Width/Height` in the description |
+| Hamamatsu NDPI | resolution tags in cm (only for Hamamatsu files) |
+| Zeiss ZEN export | `<image>_metadata.xml` next to the image |
 
 The vendor rules follow [RosettaSciIO](https://github.com/hyperspy/rosettasciio)'s
 TIFF reader, and the tests check them against its real instrument files
@@ -56,8 +63,10 @@ Inkscape extensions folder. Restart Inkscape.
   still calibrated correctly.
 - The bar is placed in the corner of the whole image, not of a clipped
   part of it.
-- Not yet read: Olympus SIS, TVIPS, Leica, Nikon and other vendor
-  formats; JEOL STEM and diffraction images.
+- Not yet read: Zeiss AxioVision's `_meta.xml` files, Leica LAS AF,
+  Oxford Instruments, TVIPS (no samples found to check them against);
+  JEOL STEM and diffraction images. Nikon files from older NIS-Elements
+  versions that keep their metadata as XML may not be recognised.
 - From Inkscape's command line, extensions get no selection, so every
   image is processed:
   `inkscape fig.svg --actions="org.sandbranch.filter.scalebar.noprefs;export-filename:out.svg;export-do"`

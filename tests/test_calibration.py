@@ -59,6 +59,14 @@ REAL_FILES = [
     ("jeol-sightx-tem-mag.tif.gz", None, 1.8208e-9, "JEOL SightX"),
     # print resolution only: deliberately not used as a calibration
     ("zeiss-axiovision.tif", None, None, None),
+    ("zeiss-axiovision-rgb.tif", None, None, None),
+    # other makers: values from tifffile, nd2 or the file's own sidecar
+    ("olympus-sis-quemesa.tif", None, 2.392791775876109e-11, "Olympus SIS"),
+    ("olympus-cellsens-sc50-crop.tif", None, 5.506001494814109e-07, "Olympus SIS"),
+    ("fluoview-fv500-page0.tif", None, 1.2429611524567008e-06, "FluoView"),
+    ("nikon-nis-40x-crop.tif", None, 1.625e-07, "Nikon NIS-Elements"),
+    ("nikon-nis-20x-rgb-crop.tif", None, 2.4285714285714288e-07, "Nikon NIS-Elements"),
+    ("leica-tcs.tif", None, 2.929688e-06, "Leica TCS"),
 ]
 
 
@@ -171,3 +179,73 @@ def test_lengths():
     assert calibration.parse_length("3 micron") == pytest.approx(3e-6)
     with pytest.raises(ValueError):
         calibration.parse_length("3 parsecs")
+
+
+def resolution_tiff(description, xres, unit, extra=None):
+    tags = ImageFileDirectory_v2()
+    if description is not None:
+        tags[270] = description
+    tags[282] = xres
+    tags[283] = xres
+    tags[296] = unit
+    for tag, value in (extra or {}).items():
+        tags[tag] = value
+    out = io.BytesIO()
+    Image.fromarray(np.zeros((8, 8), np.uint8)).save(out, "TIFF", tiffinfo=tags)
+    return out.getvalue()
+
+
+def test_leica_las_x():
+    # as LAS X writes it: centimetres, numerator 2**32 - 1
+    from fractions import Fraction
+
+    xres = Fraction(4294967295, 36729)
+    desc = "<LMSIOManager><ProductVersion>2,0,0,0</ProductVersion></LMSIOManager>"
+    found = calibration.read(resolution_tiff(desc, xres, 3))
+    assert found.source == "Leica LAS X"
+    assert found.x == pytest.approx(0.01 / float(xres))
+    # the same resolution in a file that is not from LAS X is not a calibration
+    assert calibration.read(resolution_tiff("something else", xres, 3)) is None
+
+
+def test_hamamatsu_ndpi():
+    data = resolution_tiff(None, 43826.0, 3, {271: "Hamamatsu", 65420: 1})
+    found = calibration.read(data)
+    assert found.source == "Hamamatsu NDPI"
+    assert found.x == pytest.approx(2.281750559028887e-07)
+    assert (
+        calibration.read(resolution_tiff(None, 43826.0, 3, {271: "Hamamatsu"})) is None
+    )
+
+
+def test_nikon_not_calibrated():
+    key = b"\x06\x0d" + "dCalibration\0".encode("utf-16-le")
+    off = b"\x01\x0c" + "bCalibrated\0".encode("utf-16-le")
+    import struct
+
+    calibrated = key + struct.pack("<d", 0.5) + off + b"\x01"
+    found = calibration.read(tiff(extra={65331: calibrated}))
+    assert found.x == pytest.approx(0.5e-6)
+    assert (
+        calibration.read(
+            tiff(extra={65331: key + struct.pack("<d", 0.5) + off + b"\x00"})
+        )
+        is None
+    )
+
+
+def test_zeiss_zen_metadata_file(tmp_path):
+    image = tmp_path / "cells.tiff"
+    image.write_bytes(tiff(resolution=300.0))  # print resolution only
+    (tmp_path / "cells.tiff_metadata.xml").write_text(
+        "<ImageMetadata><Scaling><Items>"
+        '<Distance Id="X"><Value>1.0833333333333332E-07</Value></Distance>'
+        '<Distance Id="Y"><Value>1.0833333333333332E-07</Value></Distance>'
+        "</Items></Scaling></ImageMetadata>"
+    )
+    found = calibration.read(str(image))
+    assert found.source == "Zeiss ZEN (metadata file)"
+    assert found.x == pytest.approx(1.0833333333333332e-07)
+    # from the bytes, with the path given
+    assert calibration.read(image.read_bytes(), path=str(image)).x == found.x
+    assert calibration.read(image.read_bytes()) is None

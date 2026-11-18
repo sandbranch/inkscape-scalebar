@@ -73,6 +73,10 @@ def drawn_area(image, raster_w, raster_h):
 class ScaleBar(inkex.EffectExtension):
     """Draw a calibrated scale bar on the selected microscope images"""
 
+    def __init__(self):
+        super().__init__()
+        self.image_paths = {}  # image id -> linked file, for sidecar metadata
+
     def add_arguments(self, pars):
         pars.add_argument("--tab")
         pars.add_argument("--source", default="auto", help="auto, manual or line")
@@ -117,6 +121,7 @@ class ScaleBar(inkex.EffectExtension):
         for path in candidates:
             if os.path.isfile(path):
                 with open(path, "rb") as f:
+                    self.image_paths[image.get("id")] = path
                     return f.read()
         return None
 
@@ -174,7 +179,9 @@ class ScaleBar(inkex.EffectExtension):
             self.store(image, cal)
             return cal
         return self.stored_calibration(image) or (
-            calibration.read(data) if data else None
+            calibration.read(data, path=self.image_paths.get(image.get("id")))
+            if data
+            else None
         )
 
     # -- drawing

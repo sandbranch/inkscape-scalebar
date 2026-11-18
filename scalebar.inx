@@ -35,7 +35,7 @@
             </param>
             <param name="pixel_size" type="string" gui-text="Pixel size:" gui-description="Size of one pixel, such as 0.325 µm or 2.5 nm">0.1 µm</param>
             <param name="line_length" type="string" gui-text="Length of the line:" gui-description="For example the length of a scale bar burnt into the image: 50 µm">10 µm</param>
-            <label xml:space="preserve">Read from the file: OME-TIFF, ImageJ/Fiji TIFF, Thermo Fisher/FEI and Zeiss SEM TIFF, Gatan DigitalMicrograph TIFF, JEOL SightX TEM TIFF.
+            <label xml:space="preserve">Read from the file: OME-TIFF, ImageJ/Fiji, Olympus/Evident cellSens and FluoView, Nikon NIS-Elements, Leica LAS X and TCS, Hamamatsu NDPI, Thermo Fisher/FEI and Zeiss SEM, Gatan DigitalMicrograph and JEOL SightX TIFFs, and the Zeiss ZEN metadata file next to an image.
 
 With nothing selected, every image in the drawing gets a scale bar.
 
