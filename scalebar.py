@@ -80,11 +80,17 @@ class ScaleBar(inkex.EffectExtension):
         pars.add_argument("--line_length", default="", help="line: e.g. 10 µm")
         pars.add_argument("--length", default="auto", help="auto, or e.g. 20 µm")
         pars.add_argument("--position", default="bottom-right")
-        pars.add_argument("--margin", type=float, default=4.0, help="percent of the image width")
-        pars.add_argument("--thickness", type=float, default=1.2, help="percent of the image width")
+        pars.add_argument(
+            "--margin", type=float, default=4.0, help="percent of the image width"
+        )
+        pars.add_argument(
+            "--thickness", type=float, default=1.2, help="percent of the image width"
+        )
         pars.add_argument("--color", default="auto", help="auto, white or black")
         pars.add_argument("--label", type=inkex.Boolean, default=True)
-        pars.add_argument("--font_size", type=float, default=4.0, help="percent of the image width")
+        pars.add_argument(
+            "--font_size", type=float, default=4.0, help="percent of the image width"
+        )
         pars.add_argument("--font_family", default="sans-serif")
         pars.add_argument("--box", default="none", help="none, dark or light")
 
